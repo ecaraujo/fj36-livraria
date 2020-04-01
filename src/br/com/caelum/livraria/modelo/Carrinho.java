@@ -2,6 +2,10 @@ package br.com.caelum.livraria.modelo;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.net.MalformedURLException;
+import java.rmi.Naming;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedHashSet;
@@ -12,6 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import br.com.caelum.estoque.ItemEstoque;
+import br.com.caelum.estoque.rmi.EstoqueRmi;
 import br.com.caelum.livraria.jms.EnviadorMensagemJms;
 import br.com.caelum.livraria.rest.ClienteRest;
 
@@ -223,5 +229,23 @@ public class Carrinho implements Serializable {
 
 	public boolean temCartao() {
 		return numeroCartao != null && titularCartao != null;
+	}
+
+	public void verificarDisponibilidadeDosItensComRmi() throws MalformedURLException, RemoteException, NotBoundException {
+		
+		EstoqueRmi estoque = (EstoqueRmi) Naming.lookup("rmi://localhost:1099/estoque");
+		
+		for(ItemCompra itemCompra : this.itensDeCompra) {
+			
+			if(itemCompra.isImpresso()) {
+				
+				System.out.println("Verificação da quantidade do livro: " + itemCompra.getTitulo());
+				
+				ItemEstoque itemEstoque = estoque.getItemEstoque(itemCompra.getCodigo());
+				
+				itemCompra.setQuantidadeNoEstoque(itemEstoque.getQuantidade());
+			}
+		}
+		
 	}
 }
